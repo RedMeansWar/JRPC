@@ -648,7 +648,7 @@ namespace JRPC_Client
 
         public static string GetName(this IXboxConsole console)
         {
-
+            return console.Name;
         }
         #endregion
 
