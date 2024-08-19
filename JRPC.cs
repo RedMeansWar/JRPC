@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using XDevkit;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace JRPC_Client
 {
@@ -70,6 +71,10 @@ namespace JRPC_Client
             typeof(double[]),
             typeof(string[])
         };
+
+        private static byte[] 
+            SMCMessage = new byte[16],
+            SMCReturn = new byte[16];
         #endregion
 
         #region Checks
@@ -97,8 +102,12 @@ namespace JRPC_Client
         {
             IXboxConsole Con;
             if (XboxNameOrIp == "default")
+            {
                 XboxNameOrIp = new XboxManager().DefaultConsole;
+            }
+
             Con = new XboxManager().OpenConsole(XboxNameOrIp);
+
             int retry = 0;
             bool Connected = false;
             while (!Connected)
@@ -174,26 +183,6 @@ namespace JRPC_Client
             {
             }
         }
-
-        /// <summary>
-        /// Sends a shutdown command to the Xbox console.
-        /// </summary>
-        /// <param name="console">The instance of the IXboxConsole interface.</param>
-        public static void ShutDownConsole(this IXboxConsole console)
-        {
-            try
-            {
-                // Construct the shutdown command for the console.
-                string command = "consolefeatures ver=" + JRPCVersion + " type=11 params=\"A\\0\\A\\0\\\"";
-
-                // Sends the shutdown command to the console.
-                SendCommand(console, command);
-            }
-            catch
-            {
-                // Suppress any exceptions to avoid crashing if the shutdown command fails.
-            }
-        }
         #endregion
 
         #region LED's
@@ -207,7 +196,9 @@ namespace JRPC_Client
         /// <param name="bottomRightLED">The state of the bottom-right LED.</param>
         public static void SetLeds(this IXboxConsole console, LEDState Top_Left, LEDState Top_Right, LEDState Bottom_Left, LEDState Bottom_Right)
         {
-            string command = "consolefeatures ver=" + JRPCVersion + " type=14 params=\"A\\0\\A\\4\\" + Int + "\\" + (uint)Top_Left + "\\" + Int + "\\" + (uint)Top_Right + "\\" + Int + "\\" + (uint)Bottom_Left + "\\" + Int + "\\" + (uint)Bottom_Right + "\\\"";
+            string command = "consolefeatures ver=" + JRPCVersion + " type=14 params=\"A\\0\\A\\4\\" + Int 
+                + "\\" + (uint)Top_Left + "\\" + Int + "\\" + (uint)Top_Right + "\\" + Int + "\\" 
+                + (uint)Bottom_Left + "\\" + Int + "\\" + (uint)Bottom_Right + "\\\"";
             SendCommand(console, command);
         }
         #endregion
@@ -533,11 +524,13 @@ namespace JRPC_Client
         /// <param name="Type">The type of notification to display (as an integer).</param>
         public static void XNotify(this IXboxConsole console, string Message, int Type)
         {
-            // Check if the console is connected before sending the notification
-            if (!console.IsConnected()) return;
+            string command = "consolefeatures ver=" + JRPCVersion + " type=12 params=\"A\\0\\A\\2\\" 
+                + JRPC.String + "/" + Message.Length + "\\" 
+                + Message.ToHexString() + "\\" 
+                + JRPC.Int + "\\" 
+                + Type + "\\\"";
 
-            // Send the notification with the specified message and type
-            console.XNotify(Message, Type);
+            SendCommand(console, command);
         }
 
         /// <summary>
@@ -546,14 +539,7 @@ namespace JRPC_Client
         /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Message">The message to display in the notification.</param>
         /// <param name="Type">The type of notification to display (default is FlashingXboxConsole).</param>
-        public static void XNotify(this IXboxConsole console, string Message, XNotifyType Type = XNotifyType.FlashingXboxConsole)
-        {
-            // Check if the console is connected before sending the notification
-            if (!console.IsConnected()) return;
-
-            // Send the notification with the specified message and type
-            console.XNotify(Message, (int)Type);
-        }
+        public static void XNotify(this IXboxConsole console, string Message, XNotifyType Type = XNotifyType.FlashingXboxConsole) => XNotify(console, Message, (int)Type);
         #endregion
 
         #region Console Information
@@ -646,10 +632,284 @@ namespace JRPC_Client
             return uint.Parse(text.Substring(text.Find(" ") + 1), NumberStyles.HexNumber);
         }
 
+        /// <summary>
+        /// Gets the name of the Xbox console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <returns>The name of the console.</returns>
         public static string GetName(this IXboxConsole console)
         {
-            return console.Name;
+            string consoleName = "";
+
+            // If the console is not connected return the string as empty
+            if (!console.IsConnected()) return "";
+
+            // Try to get the console name, if not catch the error
+            try { consoleName = console.Name; }
+            catch {}
+
+            return consoleName; // Return the console name
         }
+
+        /// <summary>
+        /// Gets the XUID of the console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <returns>The console's id.</returns>
+        public static string GetXUID(this IXboxConsole console)
+        {
+            string xuid = "";
+
+            // If the console is not connection return a string as empty
+            if (!console.IsConnected()) return "";
+
+            // Try to get the console XUID, if not catch the error
+            try { xuid = console.SendCommand("xuid").Replace("200- ", string.Empty); }
+            catch { }
+
+            return xuid; // Return the console's XUID
+        }
+
+        /// <summary>
+        /// Get's the Debug Monitor version number.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <returns>The debug monitor version.</returns>
+        public static string GetDMVersion(this IXboxConsole console)
+        {
+            string debugMonitor = "";
+
+            // If the console is not connection return a string as empty
+            if (!console.IsConnected()) return "";
+
+            // Try to get the console debug monitor version, if not catch the error
+            try { debugMonitor = console.SendCommand("dmversion").Replace("200- ", string.Empty); }
+            catch { }
+
+            return debugMonitor; // Return the debug monitor version
+        }
+        #endregion
+
+        #region Console Features
+        /// <summary>
+        /// Freeze or unfreeze the console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Freeze">Freeze or unfreeze the console.</param>
+        public static void FreezeConsole(this IXboxConsole console, bool Freeze)
+        {
+            if (Freeze)
+            {
+                // If the freeze boolean is true, freeze the console
+                console.SendCommand("stop");
+            }
+
+            // Unfreeze the console if false
+            console.SendCommand("go");
+        }
+
+        /// <summary>
+        /// Sets the DVD tray to open or closed.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Open">Toggle if the disk tray is open or closed.</param>
+        public static void SetTrayState(this IXboxConsole console, bool Open)
+        {
+            if (Open)
+            {
+                console.CallVoid(console.ResolveFunction("xam.xex", (int)DvdTrayState.Open), new[] { 0, 0, 0, 0});
+            }
+            else
+            {
+                console.CallVoid(console.ResolveFunction("xam.xex", (int)DvdTrayState.Close), new[] { 0, 0, 0, 0 });
+            }
+        }
+
+        /// <summary>
+        /// Sends a shutdown command to the Xbox console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        public static void ShutDownConsole(this IXboxConsole console)
+        {
+            try
+            {
+                // Construct the shutdown command for the console.
+                string command = "consolefeatures ver=" + JRPCVersion + " type=11 params=\"A\\0\\A\\0\\\"";
+
+                // Sends the shutdown command to the console.
+                SendCommand(console, command);
+            }
+            catch
+            {
+                // Suppress any exceptions to avoid crashing if the shutdown command fails.
+            }
+        }
+
+        /// <summary>
+        /// Sets the console's fan speed to a desired amount.
+        /// </summary>
+        /// <param name="console"></param>
+        /// <param name="fan">The fan ID (1 is usually the default.)</param>
+        /// <param name="speed">The fan speed.</param>
+        /// <returns>Returns true if the fan speed has been modified, otherwise false.</returns>
+        public static bool FanSpeed(this IXboxConsole console, int fan, int speed)
+        {
+            if (fan == 1)
+                SMCMessage[0] = 0x94;
+            else if (fan == 2)
+                SMCMessage[0] = 0x89;
+            else
+                return false;
+
+            if (speed >= 100)
+                speed = 100;
+            else if (speed <= 0)
+                speed = 55;
+            else if (speed < 45)
+                SMCMessage[1] = 0x7F;
+            else
+                SMCMessage[1] = (byte)(speed | 0x80);
+
+            return true;
+        }
+        #endregion
+
+        #region Profiles
+        /// <summary>
+        /// Grabs the console's assigned default profile.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="XUID">The XUID of the console.</param>
+        public static void GetUserDefaultProfile(this IXboxConsole console, out long XUID)
+        {
+            console.SendCommand("autoprof");
+            XUID = 0;
+        }
+
+        /// <summary>
+        /// Set's the console's default profile.
+        /// </summary>
+        /// <param name="console">The instance of IXboxConsole interface.</param>
+        /// <param name="XUID">The XUID of the console.</param>
+        public static void SetUserDefaultProfile(this IXboxConsole console, long XUID) => console.SendCommand("autoprof xuid=" + XUID);
+        #endregion
+
+        #region Shortcuts
+        /// <summary>
+        /// Quickly launches a Xbox shortcut.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="UI">The user-interface of the shortcut to go to.</param>
+        public static void XboxShortcut(this IXboxConsole console, XboxShortcuts UI)
+        {
+            switch (UI)
+            {
+                case XboxShortcuts.XboxHome:
+                    console.Reboot(XboxDirectory.XboxHome, XboxDirectory.XboxHome, XboxDirectory.XboxHome, XboxRebootFlags.Title);
+                    break;
+
+                case XboxShortcuts.AvatarEditor:
+                    console.Reboot(XboxDirectory.AvatarEditor, XboxDirectory.AvatarEditor, XboxDirectory.AvatarEditor, XboxRebootFlags.Title);
+                    break;
+
+                case XboxShortcuts.DriveSelector:
+                    console.Reboot(XboxDirectory.DriveSelector, XboxDirectory.DriveSelector, XboxDirectory.DriveSelector, XboxRebootFlags.Title);
+                    break;
+
+                case XboxShortcuts.TurnOffConsole:
+                    console.ShutDownConsole();
+                    break;
+
+                case XboxShortcuts.AccountManagement:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (int)XboxShortcuts.AccountManagement));
+                    break;
+
+                case XboxShortcuts.Achievements:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (int)XboxShortcuts.Achievements));
+                    break;
+
+                case XboxShortcuts.ActiveDownloads:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (int)XboxShortcuts.ActiveDownloads));
+                    break;
+
+                case XboxShortcuts.Awards:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (int)XboxShortcuts.Awards));
+                    break;
+
+                case XboxShortcuts.BeaconsAndActiviy:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.BeaconsAndActiviy));
+                    break;
+
+                case XboxShortcuts.FamilySettings:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.FamilySettings));
+                    break;
+
+                case XboxShortcuts.Friends:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.Friends));
+                    break;
+
+                case XboxShortcuts.GuideButton:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.GuideButton));
+                    break;
+
+                case XboxShortcuts.Messages:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.Messages), 0);
+                    break;
+
+                case XboxShortcuts.MyGames:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.MyGames), new object[] { 0, 0, 0, 0 });
+                    break;
+
+                case XboxShortcuts.OpenTray:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.OpenTray), new object[] { 0, 0, 0, 0 });
+                    break;
+
+                case XboxShortcuts.CloseTray:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.CloseTray));
+                    break;
+
+                case XboxShortcuts.Party:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.Party), new object[] { 0, 0, 0, 0 });
+                    break;
+
+                case XboxShortcuts.Profile:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.Profile));
+                    break;
+
+                case XboxShortcuts.Recent:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.Recent));
+                    break;
+
+                case XboxShortcuts.RedeemCode:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.Recent));
+                    break;
+
+                case XboxShortcuts.SelectMusic:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.SelectMusic));
+                    break;
+
+                case XboxShortcuts.SystemMusicPlayer:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.SystemMusicPlayer));
+                    break;
+
+                case XboxShortcuts.SystemSettings:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.SystemSettings));
+                    break;
+
+                case XboxShortcuts.WindowsMediaCenter:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (uint)XboxShortcuts.WindowsMediaCenter));
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Sets the color of the console in Xbox 360 Neighborhood.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Color">The color of the console to display.</param>
+        public static void SetConsoleColor(this IXboxConsole console, XboxColor Color) => console.SendCommand("setcolor name=" + Enum.GetName(typeof(int), Color).ToLower());
+
+        
         #endregion
 
         #region Conversion
@@ -689,6 +949,59 @@ namespace JRPC_Client
             }
 
             return array;
+        }
+
+        #endregion
+
+        #region Controller
+        public static void GetInputProcess(this IXboxConsole console, UserIndex Index)
+        {
+            console.SendCommand("autoinput user=" + Index + " process");
+        }
+
+        public static void BindController(this IXboxConsole console, UserIndex Index, uint QueueLength)
+        {
+            console.SendCommand("autoinput user=" + Index + " bind queuelen=" + QueueLength);
+        }
+
+        public static void UnbindController(this IXboxConsole console, UserIndex Index)
+        {
+            console.SendCommand("autoinput user=" + Index + " unbind");
+        }
+
+        public static void ConnectController(this IXboxConsole console, UserIndex Index)
+        {
+            console.SendCommand("autoinput user=" + Index + " connect");
+        }
+
+        public static void DisconnectController(this IXboxConsole console, UserIndex Index)
+        {
+            console.SendCommand("autoinput user=" + Index + " disconnect");
+        }
+
+        public static void SetGamePadState(this IXboxConsole console, UserIndex Index, ref XBOX_AUTOMATION_GAMEPAD GamePad)
+        {
+            console.SendCommand("autoinput user=" + Index + " setpacket");
+        }
+
+        public static bool QueueGamepadState(this IXboxConsole console, UserIndex Index, ref XBOX_AUTOMATION_GAMEPAD Gamepad, uint TimedDuration, uint CountDuration)
+        {
+            console.SendCommand("autoinput user=" + Index + " queuepackets count=" + CountDuration);
+            return true;
+        }
+
+        public static void ClearGamePadQueue(this IXboxConsole console, UserIndex Index)
+        {
+            console.SendCommand("autoinput user=" + Index + " clearqueue");
+        }
+
+        public static void QueryGamepadQueue(this IXboxConsole console, UserIndex Index, out uint QueueLength, out uint ItemsInQueue, out uint TimedDurationRemaining, out uint CountDurationRemaining)
+        {
+            QueueLength = 0;
+            ItemsInQueue = 0;
+            TimedDurationRemaining = 0;
+            CountDurationRemaining = 0;
+            console.SendCommand("autoinput user=" + Index + " queryqueue");
         }
         #endregion
 
@@ -1999,6 +2312,15 @@ namespace JRPC_Client
         }
         #endregion
 
+        #region Internal Classes
+        internal static class XboxDirectory
+        {
+            public const string XboxHome = @"\Device\Harddisk0\SystemExtPartition\20449700\dash.xex";
+            public const string AvatarEditor = @"\Device\Harddisk0\SystemExtPartition\20449700\AvatarEditor.xex";
+            public const string DriveSelector = @"\Device\Harddisk0\SystemExtPartition\20449700\signin.xex";
+        }
+        #endregion
+
         #endregion
 
         #region Enums
@@ -2094,6 +2416,141 @@ namespace JRPC_Client
             PlayerUnmuted = 64,
             FlashingChatSymbol = 65,
             Updating = 76,
+        }
+
+        public enum TrayState
+        {
+            Open,
+            Closed,
+            Opening,
+            Closing,
+            Unknown
+        }
+
+        public enum DvdTrayState
+        {
+            Open,
+            Close
+        }
+
+        public enum PeekType
+        {
+
+        }
+
+        public enum PokeType
+        {
+
+        }
+
+        public enum UserIndex
+        {
+            
+        }
+
+        public enum EndianType
+        {
+            BigEndian,
+            LittleEndian
+        }
+
+        public enum XboxShortcuts : int
+        {
+            Recent = 0x2C8,
+            GuideButton = 0x506,
+            Achievements = 0x2D0,
+            Awards = 0x03C6,
+            MyGames,
+            ActiveDownloads = 0x02E7,
+            RedeemCode,
+            XboxHome,
+            Friends = 0x2BF,
+            Party = 0x0305,
+            Messages = 0x2C0,
+            BeaconsAndActiviy = 0xB39,
+            PrivateChat = 0x2C2,
+            OpenTray = 0x60,
+            CloseTray = 0x62,
+            SystemVideoPlayer = 2,
+            SystemMusicPlayer = 1,
+            Picture_Viewer,
+            WindowsMediaCenter,
+            SelectMusic = 0,
+            DriveSelector = 5,
+            Profile = 0x2c4,
+            Preferences,
+            FamilySettings,
+            SystemSettings,
+            AccountManagement = 4,
+            TurnOffConsole = 0x0295,
+            AvatarEditor = 0xB3A
+        }
+
+        public enum XboxDrives
+        {
+            HDD,
+            HDD0,
+            INTUSB,
+            USB0,
+            USB1,
+            USB2,
+            USB3,
+            USB4,
+            CdRom0,
+            DVD,
+            GAME,
+            D,
+            DASHUSER,
+            media,
+            SysCache0,
+            SysCache1,
+        }
+
+        public enum XboxColor
+        {
+            Black,
+            Blue,
+            BlueGray,
+            White
+        }
+
+        public enum PartyOptions
+        {
+            CreateParty = 0xafc,
+            PartySettings = 0xb08,
+            InviteOnly = 1,
+            Kick = 0xb02,
+            OpenParty = 0,
+            JoinParty = 0xb01,
+            AltJoinParty = 0xb1b,
+            LeaveParty = 0xafd,
+            InvitePlayer = 0xb15,
+        }
+
+        public enum SignIn : int
+        {
+            QuickSignIn = 700
+        }
+
+        public enum XboxConsoleType
+        {
+            DevelopmentKit,
+            TestKit,
+            ReviewerKit,
+            NotConnected
+        }
+        #endregion
+
+        #region Structures
+        public struct XboxAutomationGamePad
+        {
+            public XboxAutomationButtonFlags Buttons;
+            public uint LeftTrigger;
+            public uint RightTrigger;
+            public int LeftThumbX;
+            public int LeftThumbY;
+            public int RightThumbX;
+            public int RightThumbY;
         }
         #endregion
     }
