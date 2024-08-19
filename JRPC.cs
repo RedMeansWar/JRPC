@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using XDevkit;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace JRPC_Client
 {
@@ -92,51 +91,61 @@ namespace JRPC_Client
 
         #region Connections
         /// <summary>
-        /// Attempts to connect to an Xbox console specified by name or IP address.
+        /// Attempts to connect to an Xbox console. If no console name or IP is specified, defaults to a predefined console.
         /// </summary>
-        /// <param name="console">The IXboxConsole instance used to establish the connection.</param>
-        /// <param name="Console">The connected IXboxConsole instance, or the attempted instance if the connection fails.</param>
-        /// <param name="XboxNameOrIp">The name or IP address of the Xbox console to connect to. Defaults to "default" which uses the default console name.</param>
-        /// <returns>True if the connection is successful; otherwise, false.</returns>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Console">The connected Xbox console instance.</param>
+        /// <param name="XboxNameOrIp">The name or IP address of the Xbox console. Defaults to "default".</param>
+        /// <returns>True if the connection is successful, otherwise false.</returns>
         public static bool Connect(this IXboxConsole console, out IXboxConsole Console, string XboxNameOrIp = "default")
         {
             IXboxConsole Con;
+
+            // Use default console name or IP if not specified
             if (XboxNameOrIp == "default")
             {
                 XboxNameOrIp = new XboxManager().DefaultConsole;
             }
 
+            // Open a connection to the specified Xbox console
             Con = new XboxManager().OpenConsole(XboxNameOrIp);
 
-            int retry = 0;
-            bool Connected = false;
+            int retry = 0; // Retry counter
+            bool Connected = false; // Connection status
+
+            // Attempt to connect to the console
             while (!Connected)
             {
                 try
                 {
+                    // Open the connection
                     connectionId = Con.OpenConnection(null);
-                    Connected = true;
+                    Connected = true; // Connection successful
                 }
                 catch (COMException ex)
                 {
+                    // Handle specific COM exceptions
                     if (ex.ErrorCode == UIntToInt(0x82DA0100) || ex.ErrorCode == UIntToInt(0x82DA0001) || ex.ErrorCode == UIntToInt(0x82DA0108))
                     {
-                        if (retry >= 3) // three attempts
+                        // Retry up to three times if certain errors occur
+                        if (retry >= 3)
                         {
                             Console = Con;
-                            return false;
+                            return false; // Connection failed after retries
                         }
                         retry++;
-                        Delay(100);
+                        Delay(100); // Wait before retrying
                     }
                     else
                     {
+                        // For other errors, return false immediately
                         Console = Con;
                         return false;
                     }
                 }
             }
 
+            // Return the connected console and status
             Console = Con;
             return true;
         }
@@ -154,7 +163,6 @@ namespace JRPC_Client
             }
             catch
             {
-                // Suppress any exceptions to avoid crashing if the disconnect fails.
             }
         }
 
@@ -168,7 +176,7 @@ namespace JRPC_Client
             try
             {
                 // Disconnect the current connection.
-                console.CloseConnection(connectionId);
+                console.Disconnect();
 
                 // Wait for 100 milliseconds before attempting to reconnect.
                 Delay(100);
@@ -501,8 +509,8 @@ namespace JRPC_Client
         /// <param name="xexDirectory">The directory where the XEX executable is located.</param>
         public static bool LaunchXex(this IXboxConsole console, string Path, string Directory)
         {
-            string XEX = "\"" + Path + "\""; //add "" around the path, to prevent errors with paths including white spaces
-            string DIR = "\"" + Directory + "\""; //add "" around the path, to prevent errors with paths including white spaces
+            string XEX = "\"" + Path + "\""; // add "" around the path, to prevent errors with paths including white spaces
+            string DIR = "\"" + Directory + "\""; // add "" around the path, to prevent errors with paths including white spaces
 
             string resp = SendCommand(console, "magicboot Title=" + XEX + " Directory=" + DIR); // concatenate parameters
 
@@ -792,6 +800,8 @@ namespace JRPC_Client
         /// <param name="console">The instance of IXboxConsole interface.</param>
         /// <param name="XUID">The XUID of the console.</param>
         public static void SetUserDefaultProfile(this IXboxConsole console, long XUID) => console.SendCommand("autoprof xuid=" + XUID);
+
+        public static void GetSignInState(this IXboxConsole console) => console.ResolveFunction("xboxkrnl.exe", 528);
         #endregion
 
         #region Shortcuts
@@ -950,51 +960,105 @@ namespace JRPC_Client
 
             return array;
         }
-
         #endregion
 
         #region Controller
+        /// <summary>
+        /// Sends a command to the Xbox console to start processing input for a specified user.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index whose input should be processed.</param>
         public static void GetInputProcess(this IXboxConsole console, UserIndex Index)
         {
             console.SendCommand("autoinput user=" + Index + " process");
         }
 
+        /// <summary>
+        /// Binds a controller to a specified user on the Xbox console with a given input queue length.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index to bind the controller to.</param>
+        /// <param name="QueueLength">The length of the input queue to bind to the user.</param>
         public static void BindController(this IXboxConsole console, UserIndex Index, uint QueueLength)
         {
             console.SendCommand("autoinput user=" + Index + " bind queuelen=" + QueueLength);
         }
 
+        /// <summary>
+        /// Unbinds the controller from a specified user on the Xbox console, stopping any input processing for that user.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index to unbind the controller from.</param>
         public static void UnbindController(this IXboxConsole console, UserIndex Index)
         {
             console.SendCommand("autoinput user=" + Index + " unbind");
         }
 
+        /// <summary>
+        /// Sends a command to connect a controller for the specified user on the Xbox console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index to connect the controller to.</param>
         public static void ConnectController(this IXboxConsole console, UserIndex Index)
         {
             console.SendCommand("autoinput user=" + Index + " connect");
         }
 
+        /// <summary>
+        /// Sends a command to disconnect the controller for the specified user on the Xbox console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index to disconnect the controller from.</param>
         public static void DisconnectController(this IXboxConsole console, UserIndex Index)
         {
             console.SendCommand("autoinput user=" + Index + " disconnect");
         }
 
+        /// <summary>
+        /// Sends a command to set the gamepad state for the specified user on the Xbox console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index to set the gamepad state for.</param>
+        /// <param name="GamePad">The gamepad state to be set.</param>
         public static void SetGamePadState(this IXboxConsole console, UserIndex Index, ref XBOX_AUTOMATION_GAMEPAD GamePad)
         {
             console.SendCommand("autoinput user=" + Index + " setpacket");
         }
 
+        /// <summary>
+        /// Queues gamepad input packets for the specified user on the Xbox console, specifying the timed duration and packet count duration.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index for which the gamepad state will be queued.</param>
+        /// <param name="Gamepad">The gamepad state to be queued.</param>
+        /// <param name="TimedDuration">The timed duration for which the gamepad state will be queued.</param>
+        /// <param name="CountDuration">The number of packets to queue.</param>
+        /// <returns>Returns true if the command is sent successfully.</returns>
         public static bool QueueGamepadState(this IXboxConsole console, UserIndex Index, ref XBOX_AUTOMATION_GAMEPAD Gamepad, uint TimedDuration, uint CountDuration)
         {
             console.SendCommand("autoinput user=" + Index + " queuepackets count=" + CountDuration);
             return true;
         }
 
+        /// <summary>
+        /// Clears the gamepad input queue for the specified user on the Xbox console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index for which the gamepad queue will be cleared.</param>
         public static void ClearGamePadQueue(this IXboxConsole console, UserIndex Index)
         {
             console.SendCommand("autoinput user=" + Index + " clearqueue");
         }
 
+        /// <summary>
+        /// Queries the current status of the gamepad input queue for the specified user on the Xbox console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Index">The user index for which the gamepad queue status is queried.</param>
+        /// <param name="QueueLength">Outputs the length of the gamepad queue.</param>
+        /// <param name="ItemsInQueue">Outputs the number of items currently in the queue.</param>
+        /// <param name="TimedDurationRemaining">Outputs the remaining time duration for queued packets.</param>
+        /// <param name="CountDurationRemaining">Outputs the remaining count duration for queued packets.</param>
         public static void QueryGamepadQueue(this IXboxConsole console, UserIndex Index, out uint QueueLength, out uint ItemsInQueue, out uint TimedDurationRemaining, out uint CountDurationRemaining)
         {
             QueueLength = 0;
@@ -1025,28 +1089,36 @@ namespace JRPC_Client
 
         #region Finding And Reading Data
         /// <summary>
-        /// Finds the index of the first occurrence of a substring within the string.
+        /// Finds the first occurrence of a specified substring within the given string.
         /// </summary>
-        /// <param name="String">The string to search in.</param>
-        /// <param name="_Ptr">The substring to find.</param>
-        /// <returns>The index of the first occurrence of the substring, or -1 if not found.</returns>
+        /// <param name="String">The string in which to search for the substring.</param>
+        /// <param name="_Ptr">The substring to search for within the string.</param>
+        /// <returns>
+        /// The zero-based index of the first occurrence of the substring if found; otherwise, -1.
+        /// </returns>
         public static int Find(this string String, string _Ptr)
         {
+            // Return -1 if either the main string or the substring is empty.
             if (_Ptr.Length == 0 || String.Length == 0)
             {
                 return -1;
             }
 
+            // Loop through the main string character by character.
             for (int i = 0; i < String.Length; i++)
             {
+                // If the current character does not match the first character of the substring, continue.
                 if (String[i] != _Ptr[0])
                 {
                     continue;
                 }
 
                 bool flag = true;
+
+                // Check if the rest of the substring matches.
                 for (int j = 0; j < _Ptr.Length; j++)
                 {
+                    // If the substring exceeds the main string's length or characters do not match, set flag to false.
                     if (i + j >= String.Length || String[i + j] != _Ptr[j])
                     {
                         flag = false;
@@ -1054,35 +1126,43 @@ namespace JRPC_Client
                     }
                 }
 
+                // If a match is found, return the index.
                 if (flag)
                 {
                     return i;
                 }
             }
 
+            // Return -1 if no match is found.
             return -1;
         }
 
         /// <summary>
         /// Retrieves a block of memory from the Xbox console at the specified address and length.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <param name="Length">The number of bytes to read.</param>
         /// <returns>A byte array containing the retrieved memory.</returns>
         public static byte[] GetMemory(this IXboxConsole console, uint Address, uint Length)
         {
             uint BytesRead = 0u;
+            // Create a byte array to hold the memory read from the console.
             byte[] array = new byte[Length];
+
+            // Read the memory from the specified address into the array.
             console.DebugTarget.GetMemory(Address, Length, array, out BytesRead);
+
+            // Invalidate the memory cache for executable pages, ensuring the cache is updated.
             console.DebugTarget.InvalidateMemoryCache(ExecutablePages: true, Address, Length);
+
             return array;
         }
 
         /// <summary>
         /// Reads a signed byte from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The signed byte read from memory.</returns>
         public static sbyte ReadSByte(this IXboxConsole console, uint Address)
@@ -1093,7 +1173,7 @@ namespace JRPC_Client
         /// <summary>
         /// Reads an unsigned byte from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The unsigned byte read from memory.</returns>
         public static byte ReadByte(this IXboxConsole console, uint Address)
@@ -1104,7 +1184,7 @@ namespace JRPC_Client
         /// <summary>
         /// Reads a boolean value from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The boolean value read from memory (true if the byte is non-zero, false otherwise).</returns>
         public static bool ReadBool(this IXboxConsole console, uint Address)
@@ -1115,28 +1195,40 @@ namespace JRPC_Client
         /// <summary>
         /// Reads a float value from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The float value read from memory.</returns>
         public static float ReadFloat(this IXboxConsole console, uint Address)
         {
+            // Get 4 bytes of memory from the specified address.
             byte[] memory = console.GetMemory(Address, 4u);
+
+            // Reverse the bytes if needed (for endianness differences).
             ReverseBytes(memory, 4);
+
+            // Convert the byte array into a float and return it.
             return BitConverter.ToSingle(memory, 0);
         }
 
         /// <summary>
-        /// Reads an array of float values from the Xbox console at the specified address.
+        /// Reads an array of 32-bit floats from the specified memory address in the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to start reading from.</param>
         /// <param name="ArraySize">The number of floats to read.</param>
-        /// <returns>An array of float values read from memory.</returns>
+        /// <returns>An array of 32-bit float values read from the memory.</returns>
         public static float[] ReadFloat(this IXboxConsole console, uint Address, uint ArraySize)
         {
+            // Initialize an array to store the float values.
             float[] array = new float[ArraySize];
+
+            // Get the memory from the specified address. Each float requires 4 bytes, so we read ArraySize * 4 bytes.
             byte[] memory = console.GetMemory(Address, ArraySize * 4);
+
+            // Reverse the byte order for each float (if necessary for the platform's endianness).
             ReverseBytes(memory, 4);
+
+            // Iterate through the memory and convert each 4-byte segment into a float.
             for (int i = 0; i < ArraySize; i++)
             {
                 array[i] = BitConverter.ToSingle(memory, i * 4);
@@ -1148,7 +1240,7 @@ namespace JRPC_Client
         /// <summary>
         /// Reads a signed 16-bit integer from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The signed 16-bit integer read from memory.</returns>
         public static short ReadInt16(this IXboxConsole console, uint Address)
@@ -1161,15 +1253,22 @@ namespace JRPC_Client
         /// <summary>
         /// Reads an array of signed 16-bit integers from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to start reading from.</param>
         /// <param name="ArraySize">The number of 16-bit integers to read.</param>
         /// <returns>An array of signed 16-bit integers read from memory.</returns>
         public static short[] ReadInt16(this IXboxConsole console, uint Address, uint ArraySize)
         {
+            // Initialize an array to store the short values.
             short[] array = new short[ArraySize];
+
+            // Get the memory from the specified address. Each short requires 2 bytes, so we read ArraySize * 2 bytes.
             byte[] memory = console.GetMemory(Address, ArraySize * 2);
+
+            // Reverse the byte order for each short (if necessary for the platform's endianness).
             ReverseBytes(memory, 2);
+
+            // Iterate through the memory and convert each 2-byte segment into a short.
             for (int i = 0; i < ArraySize; i++)
             {
                 array[i] = BitConverter.ToInt16(memory, i * 2);
@@ -1181,7 +1280,7 @@ namespace JRPC_Client
         /// <summary>
         /// Reads an unsigned 16-bit integer from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The unsigned 16-bit integer read from memory.</returns>
         public static ushort ReadUInt16(this IXboxConsole console, uint Address)
@@ -1194,27 +1293,35 @@ namespace JRPC_Client
         /// <summary>
         /// Reads an array of unsigned 16-bit integers from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to start reading from.</param>
         /// <param name="ArraySize">The number of 16-bit integers to read.</param>
         /// <returns>An array of unsigned 16-bit integers read from memory.</returns>
         public static ushort[] ReadUInt16(this IXboxConsole console, uint Address, uint ArraySize)
         {
+            // Initialize an array to store the UInt16 values
             ushort[] array = new ushort[ArraySize];
+
+            // Read the memory at the specified address
             byte[] memory = console.GetMemory(Address, ArraySize * 2);
+
+            // Reverse the byte order in blocks of 2 bytes for endianness
             ReverseBytes(memory, 2);
+
+            // Convert each 2-byte block into a UInt16 and store it in the array
             for (int i = 0; i < ArraySize; i++)
             {
                 array[i] = BitConverter.ToUInt16(memory, i * 2);
             }
 
+            // Return the array of UInt16 values
             return array;
         }
 
         /// <summary>
         /// Reads a signed 32-bit integer from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The signed 32-bit integer read from memory.</returns>
         public static int ReadInt32(this IXboxConsole console, uint Address)
@@ -1227,27 +1334,35 @@ namespace JRPC_Client
         /// <summary>
         /// Reads an array of signed 32-bit integers from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to start reading from.</param>
         /// <param name="ArraySize">The number of 32-bit integers to read.</param>
         /// <returns>An array of signed 32-bit integers read from memory.</returns>
         public static int[] ReadInt32(this IXboxConsole console, uint Address, uint ArraySize)
         {
+            // Initialize an array to hold the Int32 values to be read
             int[] array = new int[ArraySize];
+
+            // Retrieve the bytes from memory at the specified address
             byte[] memory = console.GetMemory(Address, ArraySize * 4);
+
+            // Reverse the byte order in blocks of 4 bytes to handle endianness
             ReverseBytes(memory, 4);
+
+            // Convert each 4-byte block into an Int32 and store in the array
             for (int i = 0; i < ArraySize; i++)
             {
                 array[i] = BitConverter.ToInt32(memory, i * 4);
             }
 
+            // Return the array of Int32 values
             return array;
         }
 
         /// <summary>
         /// Reads an unsigned 32-bit integer from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The unsigned 32-bit integer read from memory.</returns>
         public static uint ReadUInt32(this IXboxConsole console, uint Address)
@@ -1260,60 +1375,81 @@ namespace JRPC_Client
         /// <summary>
         /// Reads an array of unsigned 32-bit integers from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to start reading from.</param>
         /// <param name="ArraySize">The number of 32-bit integers to read.</param>
         /// <returns>An array of unsigned 32-bit integers read from memory.</returns>
         public static uint[] ReadUInt32(this IXboxConsole console, uint Address, uint ArraySize)
         {
+            // Initialize an array to hold the UInt32 values to be read
             uint[] array = new uint[ArraySize];
+
+            // Retrieve the bytes from memory at the specified address
             byte[] memory = console.GetMemory(Address, ArraySize * 4);
+
+            // Reverse the byte order in blocks of 4 bytes to handle endianness
             ReverseBytes(memory, 4);
+
+            // Convert each 4-byte block into a UInt32 and store in the array
             for (int i = 0; i < ArraySize; i++)
             {
                 array[i] = BitConverter.ToUInt32(memory, i * 4);
             }
 
+            // Return the array of UInt32 values
             return array;
         }
 
         /// <summary>
         /// Reads a signed 64-bit integer from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The signed 64-bit integer read from memory.</returns>
         public static long ReadInt64(this IXboxConsole console, uint Address)
         {
+            // Retrieve 8 bytes of data from memory at the specified address
             byte[] memory = console.GetMemory(Address, 8u);
+
+            // Reverse the byte order in blocks of 8 bytes to handle endianness
             ReverseBytes(memory, 8);
+
+            // Convert the 8-byte block into a signed 64-bit integer and return it
             return BitConverter.ToInt64(memory, 0);
         }
 
         /// <summary>
         /// Reads an array of signed 64-bit integers from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to start reading from.</param>
         /// <param name="ArraySize">The number of 64-bit integers to read.</param>
         /// <returns>An array of signed 64-bit integers read from memory.</returns>
         public static long[] ReadInt64(this IXboxConsole console, uint Address, uint ArraySize)
         {
+            // Initialize an array to hold the Int64 values to be read
             long[] array = new long[ArraySize];
+
+            // Retrieve the bytes from memory at the specified address
             byte[] memory = console.GetMemory(Address, ArraySize * 8);
+
+            // Reverse the byte order in blocks of 8 bytes to handle endianness
             ReverseBytes(memory, 8);
+
+            // Convert each 8-byte block into an Int64 and store in the array
             for (int i = 0; i < ArraySize; i++)
             {
                 array[i] = BitConverter.ToInt64(memory, i * 8);
             }
 
+            // Return the array of Int64 values
             return array;
         }
 
         /// <summary>
         /// Reads an unsigned 64-bit integer from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <returns>The unsigned 64-bit integer read from memory.</returns>
         public static ulong ReadUInt64(this IXboxConsole console, uint Address)
@@ -1326,20 +1462,28 @@ namespace JRPC_Client
         /// <summary>
         /// Reads an array of unsigned 64-bit integers from the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to start reading from.</param>
         /// <param name="ArraySize">The number of 64-bit integers to read.</param>
         /// <returns>An array of unsigned 64-bit integers read from memory.</returns>
         public static ulong[] ReadUInt64(this IXboxConsole console, uint Address, uint ArraySize)
         {
+            // Initialize an array to hold the UInt64 values to be read
             ulong[] array = new ulong[ArraySize];
+
+            // Retrieve the bytes from memory at the specified address
             byte[] memory = console.GetMemory(Address, ArraySize * 8);
+
+            // Reverse the byte order in blocks of 8 bytes to handle endianness
             ReverseBytes(memory, 8);
+
+            // Convert each 8-byte block into a UInt64 and store in the array
             for (int i = 0; i < ArraySize; i++)
             {
                 array[i] = BitConverter.ToUInt64(memory, i * 8);
             }
 
+            // Return the array of UInt64 values
             return array;
         }
 
@@ -1380,20 +1524,24 @@ namespace JRPC_Client
         }
 
         /// <summary>
-        /// Writes an array of signed byte values to a specified memory address on the Xbox console.
+        /// Writes an array of signed 8-bit integers to the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
-        /// <param name="Value">The array of signed byte values to write.</param>
+        /// <param name="Value">The array of signed 8-bit integers to write.</param>
         public static void WriteSByte(this IXboxConsole console, uint Address, sbyte[] Value)
         {
+            // Initialize a byte array to hold the converted values
             byte[] OutArray = new byte[0];
+
+            // Convert each sbyte value to byte and add to the output array
             for (int i = 0; i < Value.Length; i++)
             {
                 byte value = (byte)Value[i];
                 OutArray.Push(out OutArray, value);
             }
 
+            // Write the byte array to the specified memory address
             console.SetMemory(Address, OutArray);
         }
 
@@ -1461,20 +1609,26 @@ namespace JRPC_Client
         }
 
         /// <summary>
-        /// Writes an array of float values to a specified memory address on the Xbox console.
+        /// Writes an array of single-precision floating-point numbers to the Xbox console at the specified address.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
-        /// <param name="Value">The array of float values to write.</param>
+        /// <param name="Value">The array of single-precision floating-point numbers to write.</param>
         public static void WriteFloat(this IXboxConsole console, uint Address, float[] Value)
         {
+            // Initialize a byte array to hold the floating-point values as bytes
             byte[] array = new byte[Value.Length * 4];
+
+            // Convert each float value to bytes and copy to the output array
             for (int i = 0; i < Value.Length; i++)
             {
                 BitConverter.GetBytes(Value[i]).CopyTo(array, i * 4);
             }
 
+            // Reverse the byte order in blocks of 4 bytes to handle endianness
             ReverseBytes(array, 4);
+
+            // Write the byte array to the specified memory address
             console.SetMemory(Address, array);
         }
 
@@ -1685,18 +1839,34 @@ namespace JRPC_Client
         }
         #endregion
 
+        #region Memory
+        public static void DumpMemory(this IXboxConsole console, uint Length, string FileName)
+        {
+            byte[] packet = new byte[1026];
+
+            // Send GetMemEx command
+        }
+        #endregion
+
         #region Resolve Function
         /// <summary>
-        /// Resolves the address of a function within a specified module on the Xbox console.
+        /// Resolves a function address from a specified module by its ordinal number on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
-        /// <param name="ModuleName">The name of the module containing the function.</param>
-        /// <param name="Ordinal">The ordinal number of the function.</param>
-        /// <returns>The resolved function address.</returns>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="ModuleName">The name of the module to resolve the function from.</param>
+        /// <param name="Ordinal">The ordinal number of the function to resolve.</param>
+        /// <returns>The address of the function resolved from the module.</returns>
         public static uint ResolveFunction(this IXboxConsole console, string ModuleName, uint Ordinal)
         {
-            string command = "consolefeatures ver=" + JRPCVersion + " type=9 params=\"A\\0\\A\\2\\" + String + "/" + ModuleName.Length + "\\" + ModuleName.ToHexString() + "\\" + Int + "\\" + Ordinal + "\\\"";
+            // Construct the command string to resolve the function address
+            string command = "consolefeatures ver=" + JRPCVersion + " type=9 params=\"A\\0\\A\\2\\"
+                + ModuleName.Length + "\\" + ModuleName.ToHexString() + "\\"
+                + Ordinal + "\\\"";
+
+            // Send the command to the console and get the response text
             string text = SendCommand(console, command);
+
+            // Extract and parse the function address from the response text
             return uint.Parse(text.Substring(text.Find(" ") + 1), NumberStyles.HexNumber);
         }
         #endregion
@@ -1866,30 +2036,33 @@ namespace JRPC_Client
 
         #region Reversing
         /// <summary>
-        /// Reverses the bytes in the buffer in groups of the specified size.
+        /// Reverses the bytes in the buffer in groups of a specified size.
         /// </summary>
         /// <param name="buffer">The byte array to reverse.</param>
-        /// <param name="groupSize">The size of the groups to reverse. Must be a divisor of the buffer length.</param>
-        /// <exception cref="ArgumentException">Thrown when the group size is not a multiple of the buffer length.</exception>
+        /// <param name="groupSize">The size of each group of bytes to reverse.</param>
+        /// <exception cref="ArgumentException">Thrown when the buffer length is not a multiple of the group size.</exception>
         private static void ReverseBytes(byte[] buffer, int groupSize)
         {
+            // Check if the buffer length is a multiple of the group size
             if (buffer.Length % groupSize != 0)
             {
-                throw new ArgumentException("Group size must be a multiple of the buffer length", "groupSize");
+                throw new ArgumentException("Group size must be a multiple of the buffer length", nameof(groupSize));
             }
 
+            // Reverse bytes in each group of the specified size
             for (int i = 0; i < buffer.Length; i += groupSize)
             {
-                int num = i;
-                int num2 = i + groupSize - 1;
+                int start = i;
+                int end = i + groupSize - 1;
 
-                while (num < num2)
+                // Swap bytes from start and end of the group
+                while (start < end)
                 {
-                    byte b = buffer[num];
-                    buffer[num] = buffer[num2];
-                    buffer[num2] = b;
-                    num++;
-                    num2--;
+                    byte temp = buffer[start];
+                    buffer[start] = buffer[end];
+                    buffer[end] = temp;
+                    start++;
+                    end--;
                 }
             }
         }
@@ -1966,7 +2139,7 @@ namespace JRPC_Client
         /// <summary>
         /// Calls a function on the Xbox console with specified arguments and retrieves the result.
         /// </summary>
-        /// <param name="console">The Xbox console to communicate with.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="SystemThread">Indicates whether to use the system thread.</param>
         /// <param name="Type">The type identifier for the function call.</param>
         /// <param name="t">The return type of the function.</param>
