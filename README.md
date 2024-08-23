@@ -30,11 +30,5 @@ xbdm.xex, JRPC2.xex
 # Computer Requirements
 A working tool using this extention properly
 
-# Creator
-[Xx jAmes t xX]
-
-# Modified by
-[RedMeansWar]
-
 # Disclaimer
 I have no liability for any damages done to your system by using this extention.
