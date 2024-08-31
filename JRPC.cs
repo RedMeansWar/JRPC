@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -725,11 +727,13 @@ namespace JRPC_Client
         {
             if (Open)
             {
-                console.CallVoid(console.ResolveFunction("xam.xex", (int)DvdTrayState.Open), new[] { 0, 0, 0, 0});
+                console.CallVoid(console.ResolveFunction("xam.xex", (uint)DvdTrayState.Open), new[] { 0, 0, 0, 0 });
+                IsTrayOpen = true;
             }
             else
             {
-                console.CallVoid(console.ResolveFunction("xam.xex", (int)DvdTrayState.Close), new[] { 0, 0, 0, 0 });
+                console.CallVoid(console.ResolveFunction("xam.xex", (uint)DvdTrayState.Close), new[] { 0, 0, 0, 0 });
+                IsTrayOpen = false;
             }
         }
 
@@ -762,22 +766,45 @@ namespace JRPC_Client
         /// <returns>Returns true if the fan speed has been modified, otherwise false.</returns>
         public static bool FanSpeed(this IXboxConsole console, int fan, int speed)
         {
-            if (fan == 1)
-                SMCMessage[0] = 0x94;
-            else if (fan == 2)
-                SMCMessage[0] = 0x89;
-            else
-                return false;
+            uint address = console.ResolveFunction("xboxkrnl.exe", 41);
+            byte[] numArray = new byte[16];
+            byte[] numArray1 = new byte[16];
 
-            if (speed >= 100)
+            Array.Clear((Array)numArray, 0, numArray.Length);
+            Array.Clear((Array)numArray1, 0, numArray1.Length);
+
+            switch (fan)
+            {
+                case 1:
+                    numArray[0] = (byte)148;
+                    break;
+
+                case 2:
+                    numArray[0] = (byte)137;
+                    break;
+
+                default:
+                    return false;
+            }
+
+            if (speed > 100)
+            {
                 speed = 100;
-            else if (speed <= 0)
-                speed = 55;
-            else if (speed < 45)
-                SMCMessage[1] = 0x7F;
-            else
-                SMCMessage[1] = (byte)(speed | 0x80);
+            }
 
+            if (speed <= 0)
+            {
+                speed = 55;
+            }
+
+            numArray[1] = speed >= 45 ? (byte)(speed | 128) : (byte)127;
+            object[] objArray = new object[2]
+            {
+                (object) numArray,
+                null
+            };
+
+            console.CallVoid(address, objArray);
             return true;
         }
         #endregion
@@ -802,6 +829,8 @@ namespace JRPC_Client
         public static void SetUserDefaultProfile(this IXboxConsole console, long XUID) => console.SendCommand("autoprof xuid=" + XUID);
 
         public static void GetSignInState(this IXboxConsole console) => console.ResolveFunction("xboxkrnl.exe", 528);
+
+        public static void QuickSignIn(this IXboxConsole console) => console.ResolveFunction("xam.xex", 700);
         #endregion
 
         #region Shortcuts
@@ -919,7 +948,54 @@ namespace JRPC_Client
         /// <param name="Color">The color of the console to display.</param>
         public static void SetConsoleColor(this IXboxConsole console, XboxColor Color) => console.SendCommand("setcolor name=" + Enum.GetName(typeof(int), Color).ToLower());
 
-        
+        /// <summary>
+        /// Gets all of the folders in a certain directory.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole</param>
+        /// <param name="Directory"></param>
+        /// <returns>A list of all the folders in the directory.</returns>
+        public static string[] GetDirectories(this IXboxConsole console, string Directory)
+        {
+            IXboxFiles xboxFiles = console.DirectoryFiles(Directory);
+            List<string> dirList = new();
+
+            foreach (IXboxFile xboxFile in xboxFiles)
+            {
+                if (xboxFile.IsDirectory)
+                {
+                    dirList.Add(xboxFile.Name);
+                }
+            }
+
+            return dirList.ToArray();
+        }
+
+        /// <summary>
+        /// Gets all files in a certain directory.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Directory">The directory to get all the files from.</param>
+        /// <returns>A list of all the files in the directory.</returns>
+        public static string[] GetFiles(this IXboxConsole console, string Directory)
+        {
+            IXboxFiles xboxFiles = console.DirectoryFiles(Directory);
+            List<string> fileList = new();
+
+            foreach (IXboxFile file in xboxFiles)
+            {
+                fileList.Add(file.Name);
+            }
+
+            return fileList.ToArray();
+        }
+        #endregion
+
+        #region Booleans
+        public static bool IsTrayOpen
+        {
+            get => false;
+            set { }
+        }
         #endregion
 
         #region Conversion
@@ -2602,23 +2678,13 @@ namespace JRPC_Client
 
         public enum DvdTrayState
         {
-            Open,
-            Close
-        }
-
-        public enum PeekType
-        {
-
-        }
-
-        public enum PokeType
-        {
-
+            Open = 0x96,
+            Close = 0x98
         }
 
         public enum UserIndex
         {
-            
+            // todo: add User Index
         }
 
         public enum EndianType
@@ -2700,7 +2766,7 @@ namespace JRPC_Client
             InvitePlayer = 0xb15,
         }
 
-        public enum SignIn : int
+        public enum SignIn
         {
             QuickSignIn = 700
         }
