@@ -1,5 +1,5 @@
 # JRPC
-An open source library made by James, Modified for RadiationNET by RedMeansWar
+An extension that allows for remote Xbox 360 Development.
 
 # Features
 General Features
@@ -29,12 +29,6 @@ xbdm.xex, JRPC2.xex
 
 # Computer Requirements
 A working tool using this extention properly
-
-# Creator
-[Xx jAmes t xX]
-
-# Modified by
-[RedMeansWar]
 
 # Disclaimer
 I have no liability for any damages done to your system by using this extention.
