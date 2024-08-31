@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("JRPC")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("An extension that allows for remote Xbox 360 Development.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("RedMeansWar")]
 [assembly: AssemblyProduct("JRPC")]
 [assembly: AssemblyCopyright("Copyright ©  2024")]
 [assembly: AssemblyTrademark("")]
