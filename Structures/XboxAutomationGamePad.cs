@@ -2,6 +2,7 @@
 
 namespace JRPC_Client
 {
+    #pragma warning disable
     public struct XboxAutomationGamePad
     {
         public XboxAutomationButtonFlags Buttons;

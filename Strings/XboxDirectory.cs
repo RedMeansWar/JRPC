@@ -1,5 +1,6 @@
 ﻿namespace JRPC_Client
 {
+    #pragma warning disable
     public static class XboxDirectory
     {
         public const string XboxHome = @"\Device\Harddisk0\SystemExtPartition\20449700\dash.xex";

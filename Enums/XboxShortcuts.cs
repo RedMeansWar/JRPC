@@ -1,5 +1,6 @@
 ﻿namespace JRPC_Client
 {
+    #pragma warning disable
     public enum XboxShortcuts : uint
     {
         Recent = 0x2C8,

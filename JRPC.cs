@@ -497,24 +497,23 @@ namespace JRPC_Client
         }
 
         /// <summary>
-        /// Launches an XEX executable on the Xbox console.
+        /// Launches an XEX file on the console.
         /// </summary>
         /// <param name="console">The instance of the IXboxConsole interface.</param>
-        /// <param name="xexPath">The full path to the XEX executable to launch.</param>
-        /// <param name="xexDirectory">The directory where the XEX executable is located.</param>
+        /// <param name="Path">The XEX file path. Example: Hdd:\somedir\somexex.xex</param>
+        /// <param name="Directory">The XEX file location. Example: Hdd:\somedir\</param>
+        /// <returns>True if the console was able to launch the XEX file, otherwise false.</returns>
         public static bool LaunchXex(this IXboxConsole console, string Path, string Directory)
         {
-            string XEX = "\"" + Path + "\""; // add "" around the path, to prevent errors with paths including white spaces
-            string DIR = "\"" + Directory + "\""; // add "" around the path, to prevent errors with paths including white spaces
+            string XEX = "\"" + Path + "\""; // Add "" around the path, to prevent errors with paths including white spaces
+            string DIR = "\"" + Directory + "\""; // Add "" around the path, to prevent errors with paths including white spaces
 
-            string resp = SendCommand(console, "magicboot Title=" + XEX + " Directory=" + DIR); // concatenate parameters
-
-            if (!(resp.Contains("202")) || resp.Contains("203")) //check if it worked
+            string resp = console.SendCommand("magicboot Title=" + XEX + " Directory=" + DIR + "\r\n"); // Concatenate parameters
+            if (!(resp.Contains("202")) || resp.Contains("203")) // Check if it worked
             {
-                return false; // return false if it didn't work
+                return false; // Return false if it didn't work
             }
-
-            return true; //return true if it did
+            return true; // Return true if it did
         }
         #endregion
 

@@ -1,5 +1,6 @@
 ﻿namespace JRPC
 {
+    #pragma warning disable
     public enum XboxDrives
     {
         HDD,

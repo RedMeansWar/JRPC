@@ -1,5 +1,6 @@
 ﻿namespace JRPC_Client
 {
+    #pragma warning disable
     public static class XbdmCommands
     {
         public const string AdminPw = "adminpw";

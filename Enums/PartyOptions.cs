@@ -1,5 +1,6 @@
 ﻿namespace JRPC_Client
 {
+    #pragma warning disable
     public enum PartyOptions : uint
     {
         CreateParty = 0xAFC,
