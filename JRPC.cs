@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -158,14 +156,8 @@ namespace JRPC_Client
         /// <param name="console">The instance of the IXboxConsole interface.</param>
         public static void Disconnect(this IXboxConsole console)
         {
-            try
-            {
-                // Sends a "bye" command to the console to disconnect.
-                SendCommand(console, "bye");
-            }
-            catch
-            {
-            }
+            // Sends a "bye" command to the console to disconnect.
+            SendCommand(console, "bye");
         }
 
         /// <summary>
@@ -191,6 +183,7 @@ namespace JRPC_Client
             }
             catch
             {
+                throw new Exception("Couldn't reconnect to console. Was the console connected or was there another reason it failed?");
             }
         }
         #endregion
@@ -723,17 +716,17 @@ namespace JRPC_Client
         /// </summary>
         /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Open">Toggle if the disk tray is open or closed.</param>
-        public static void SetTrayState(this IXboxConsole console, bool Open)
+        public static void SetTrayState(this IXboxConsole console, TrayState State)
         {
-            if (Open)
+            switch (State)
             {
-                console.CallVoid(console.ResolveFunction("xam.xex", (uint)DvdTrayState.Open), new[] { 0, 0, 0, 0 });
-                IsTrayOpen = true;
-            }
-            else
-            {
-                console.CallVoid(console.ResolveFunction("xam.xex", (uint)DvdTrayState.Close), new[] { 0, 0, 0, 0 });
-                IsTrayOpen = false;
+                case TrayState.Open:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (int)XboxShortcuts.OpenTray), [0, 0, 0, 0]);
+                    break;
+
+                case TrayState.Close:
+                    console.CallVoid(console.ResolveFunction("xam.xex", (int)XboxShortcuts.CloseTray), [0, 0, 0, 0]);
+                    break;
             }
         }
 
@@ -758,6 +751,13 @@ namespace JRPC_Client
         }
 
         /// <summary>
+        /// Restarts the console.
+        /// </summary>
+        /// <param name="console">This instance of the IXboxConsole interface.</param>
+        /// <param name="RebootFlag">Restart type.</param>
+        public static void Reboot(this IXboxConsole console, RebootFlag RebootFlag) => console.Reboot(null, null, null, (XboxRebootFlags)RebootFlag);
+
+        /// <summary>
         /// Sets the console's fan speed to a desired amount.
         /// </summary>
         /// <param name="console"></param>
@@ -766,25 +766,25 @@ namespace JRPC_Client
         /// <returns>Returns true if the fan speed has been modified, otherwise false.</returns>
         public static bool FanSpeed(this IXboxConsole console, int fan, int speed)
         {
-            uint address = console.ResolveFunction("xboxkrnl.exe", 41);
-            byte[] numArray = new byte[16];
-            byte[] numArray1 = new byte[16];
+            uint uint0 = console.ResolveFunction("xboxkrnl.exe", 0x29);
+            byte[] byte0 = new byte[0x10];
+            byte[] byte1 = new byte[0x10];
 
-            Array.Clear((Array)numArray, 0, numArray.Length);
-            Array.Clear((Array)numArray1, 0, numArray1.Length);
+            Array.Clear(byte0, 0, byte0.Length);
+            Array.Clear(byte1 , 0, byte1.Length);
 
-            switch (fan)
+            if (fan == 1)
             {
-                case 1:
-                    numArray[0] = (byte)148;
-                    break;
-
-                case 2:
-                    numArray[0] = (byte)137;
-                    break;
-
-                default:
+                byte0[0] = 0x94;
+            }
+            else
+            {
+                if (fan != 2)
+                {
                     return false;
+                }
+
+                byte0[0] = 0x89;
             }
 
             if (speed > 100)
@@ -794,19 +794,31 @@ namespace JRPC_Client
 
             if (speed <= 0)
             {
-                speed = 55;
+                speed = 50;
             }
 
-            numArray[1] = speed >= 45 ? (byte)(speed | 128) : (byte)127;
-            object[] objArray = new object[2]
+            if (speed < 0x2d)
             {
-                (object) numArray,
-                null
-            };
+                byte0[1] = 0x7f;
+            }
+            else
+            {
+                byte0[1] = (byte)(speed | 0x80);
+            }
 
-            console.CallVoid(address, objArray);
+            object[] args = new object[2];
+            console.CallVoid(uint0, args);
             return true;
         }
+
+        /// <summary>
+        /// Sets the console's fan speed to a desired amount.
+        /// </summary>
+        /// <param name="console"></param>
+        /// <param name="fan">The fan ID (1 is usually the default.)</param>
+        /// <param name="speed">The fan speed.</param>
+        /// <returns>Returns true if the fan speed has been modified, otherwise false.</returns>
+        public static bool SetFanSpeed(this IXboxConsole console, int fan, int speed) => console.FanSpeed(fan, speed);
         #endregion
 
         #region Profiles
@@ -949,6 +961,13 @@ namespace JRPC_Client
         public static void SetConsoleColor(this IXboxConsole console, XboxColor Color) => console.SendCommand("setcolor name=" + Enum.GetName(typeof(int), Color).ToLower());
 
         /// <summary>
+        /// Changes the of the console in Xbox 360 Neighborhood.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Name">The name of the console to display.</param>
+        public static void ChangeConsoleName(this IXboxConsole console, string Name) => console.SendTextCommand(0, "dbgname name=" + Name, out _);
+
+        /// <summary>
         /// Gets all of the folders in a certain directory.
         /// </summary>
         /// <param name="console">The instance of the IXboxConsole</param>
@@ -987,14 +1006,6 @@ namespace JRPC_Client
             }
 
             return fileList.ToArray();
-        }
-        #endregion
-
-        #region Booleans
-        public static bool IsTrayOpen
-        {
-            get => false;
-            set { }
         }
         #endregion
 
@@ -2561,236 +2572,6 @@ namespace JRPC_Client
         }
         #endregion
 
-        #region Internal Classes
-        internal static class XboxDirectory
-        {
-            public const string XboxHome = @"\Device\Harddisk0\SystemExtPartition\20449700\dash.xex";
-            public const string AvatarEditor = @"\Device\Harddisk0\SystemExtPartition\20449700\AvatarEditor.xex";
-            public const string DriveSelector = @"\Device\Harddisk0\SystemExtPartition\20449700\signin.xex";
-        }
-        #endregion
-
-        #endregion
-
-        #region Enums
-        public enum LEDState
-        {
-            Off = 0,
-            Red = 8,
-            Green = 128,
-            Orange = 136,
-            Default = 128
-        }
-
-        public enum TemperatureType
-        {
-            CPU,
-            GPU,
-            EDRAM,
-            MotherBoard
-        }
-
-        public enum ThreadType
-        {
-            System,
-            Title
-        }
-
-        public enum XNotifyType : uint
-        {
-            XboxLogo = 0,
-            NewMessageLogo = 1,
-            FriendRequestLogo = 2,
-            NewMessage = 3,
-            FlashingXboxLogo = 4,
-            GamertagSentYouAMessage = 5,
-            GamertagSingedOut = 6,
-            GamertagSignedin = 7,
-            GamertagSignedIntoXboxLive = 8,
-            GamertagSignedInOffline = 9,
-            GamertagWantsToChat = 10,
-            DisconnectedFromXboxLive = 11,
-            Download = 12,
-            FlashingMusicSymbol = 13,
-            FlashingHappyFace = 14,
-            FlashingFrowningFace = 15,
-            FlashingDoubleSidedHammer = 16,
-            GamertagWantsToChat2 = 17,
-            PleaseReinsertMemoryUnit = 18,
-            PleaseReconnectControllerm = 19,
-            GamertagHasJoinedChat = 20,
-            GamertagHasLeftChat = 21,
-            GameInviteSent = 22,
-            FlashLogo = 23,
-            PageSentTo = 24,
-            Four2 = 25,
-            Four3 = 26,
-            AchievementUnlocked = 27,
-            Four9 = 28,
-            GamertagWantsToTalkInVideoKinect = 29,
-            VideoChatInviteSent = 30,
-            ReadyToPlay = 31,
-            CantDownloadX = 32,
-            DownloadStoppedForX = 33,
-            FlashingXboxConsole = 34,
-            XSentYouAGameMessage = 35,
-            DeviceFull = 36,
-            Four7 = 37,
-            FlashingChatIcon = 38,
-            AchievementsUnlocked = 39,
-            XHasSentYouANudge = 40,
-            MessengerDisconnected = 41,
-            Blank = 42,
-            CantSignInMessenger = 43,
-            MissedMessengerConversation = 44,
-            FamilyTimerXTimeRemaining = 45,
-            DisconnectedXboxLive11MinutesRemaining = 46,
-            KinectHealthEffects = 47,
-            Four5 = 48,
-            GamertagWantsYouToJoinAnXboxLiveParty = 49,
-            PartyInviteSent = 50,
-            GameInviteSentToXboxLiveParty = 51,
-            KickedFromXboxLiveParty = 52,
-            Nulled = 53,
-            DisconnectedXboxLiveParty = 54,
-            Downloaded = 55,
-            CantConnectXblParty = 56,
-            GamertagHasJoinedXblParty = 57,
-            GamertagHasLeftXblParty = 58,
-            GamerPictureUnlocked = 59,
-            AvatarAwardUnlocked = 60,
-            JoinedXblParty = 61,
-            PleaseReinsertUsbStorageDevice = 62,
-            PlayerMuted = 63,
-            PlayerUnmuted = 64,
-            FlashingChatSymbol = 65,
-            Updating = 76,
-        }
-
-        public enum TrayState
-        {
-            Open,
-            Closed,
-            Opening,
-            Closing,
-            Unknown
-        }
-
-        public enum DvdTrayState
-        {
-            Open = 0x96,
-            Close = 0x98
-        }
-
-        public enum UserIndex
-        {
-            // todo: add User Index
-        }
-
-        public enum EndianType
-        {
-            BigEndian,
-            LittleEndian
-        }
-
-        public enum XboxShortcuts : int
-        {
-            Recent = 0x2C8,
-            GuideButton = 0x506,
-            Achievements = 0x2D0,
-            Awards = 0x03C6,
-            MyGames,
-            ActiveDownloads = 0x02E7,
-            RedeemCode,
-            XboxHome,
-            Friends = 0x2BF,
-            Party = 0x0305,
-            Messages = 0x2C0,
-            BeaconsAndActiviy = 0xB39,
-            PrivateChat = 0x2C2,
-            OpenTray = 0x60,
-            CloseTray = 0x62,
-            SystemVideoPlayer = 2,
-            SystemMusicPlayer = 1,
-            Picture_Viewer,
-            WindowsMediaCenter,
-            SelectMusic = 0,
-            DriveSelector = 5,
-            Profile = 0x2c4,
-            Preferences,
-            FamilySettings,
-            SystemSettings,
-            AccountManagement = 4,
-            TurnOffConsole = 0x0295,
-            AvatarEditor = 0xB3A
-        }
-
-        public enum XboxDrives
-        {
-            HDD,
-            HDD0,
-            INTUSB,
-            USB0,
-            USB1,
-            USB2,
-            USB3,
-            USB4,
-            CdRom0,
-            DVD,
-            GAME,
-            D,
-            DASHUSER,
-            media,
-            SysCache0,
-            SysCache1,
-        }
-
-        public enum XboxColor
-        {
-            Black,
-            Blue,
-            BlueGray,
-            White
-        }
-
-        public enum PartyOptions
-        {
-            CreateParty = 0xafc,
-            PartySettings = 0xb08,
-            InviteOnly = 1,
-            Kick = 0xb02,
-            OpenParty = 0,
-            JoinParty = 0xb01,
-            AltJoinParty = 0xb1b,
-            LeaveParty = 0xafd,
-            InvitePlayer = 0xb15,
-        }
-
-        public enum SignIn
-        {
-            QuickSignIn = 700
-        }
-
-        public enum XboxConsoleType
-        {
-            DevelopmentKit,
-            TestKit,
-            ReviewerKit,
-            NotConnected
-        }
-        #endregion
-
-        #region Structures
-        public struct XboxAutomationGamePad
-        {
-            public XboxAutomationButtonFlags Buttons;
-            public uint LeftTrigger;
-            public uint RightTrigger;
-            public int LeftThumbX;
-            public int LeftThumbY;
-            public int RightThumbX;
-            public int RightThumbY;
-        }
         #endregion
     }
 }
