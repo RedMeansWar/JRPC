@@ -5,4 +5,11 @@
     {
         QuickSignIn = 700
     }
+
+    public enum SignInState
+    {
+        NotSignedIn,
+        SignedInLocally,
+        SignedInToXboxLive
+    }
 }

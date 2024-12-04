@@ -47,13 +47,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enums\DumpFlag.cs" />
     <Compile Include="Enums\EndianType.cs" />
+    <Compile Include="Enums\ErrorCodes.cs" />
+    <Compile Include="Enums\XboxCharacters.cs" />
     <Compile Include="JRPC.cs" />
     <Compile Include="Enums\LEDState.cs" />
     <Compile Include="Enums\PartyOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Enums\RebootFlag.cs" />
     <Compile Include="Enums\SignIn.cs" />
+    <Compile Include="Strings\Modules.cs" />
     <Compile Include="Structures\XboxAutomationGamePad.cs" />
     <Compile Include="Enums\TemperatureType.cs" />
     <Compile Include="Enums\ThreadType.cs" />
@@ -66,6 +70,7 @@
     <Compile Include="Enums\XboxDrive.cs" />
     <Compile Include="Enums\XboxShortcuts.cs" />
     <Compile Include="Enums\XNotify.cs" />
+    <Compile Include="Tray.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
