@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace JRPC.Enums
+﻿namespace JRPC_Client
 {
+    #pragma warning disable
     public enum ErrorCodes
     {
         /// <summary>

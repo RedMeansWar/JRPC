@@ -9,12 +9,10 @@ using XDevkit;
 
 namespace JRPC_Client
 {
-#pragma warning disable
-
+    #pragma warning disable
     public static class JRPC
     {
         #region Variables
-
         private static uint connectionId;
 
         private static readonly uint
@@ -77,7 +75,7 @@ namespace JRPC_Client
             SMCMessage = new byte[16],
             SMCReturn = new byte[16];
 
-        #endregion Variables
+        #endregion
 
         #region Checks
 
@@ -91,11 +89,9 @@ namespace JRPC_Client
             if (console.Connect(out console)) return true;
             return false; // Return false if not connected to the console.
         }
-
-        #endregion Checks
+        #endregion
 
         #region Connections
-
         /// <summary>
         /// Attempts to connect to an Xbox console. If no console name or IP is specified, defaults to a predefined console.
         /// </summary>
@@ -163,6 +159,13 @@ namespace JRPC_Client
         public static void Connect(this IXboxConsole console) => console.Connect(out console);
 
         /// <summary>
+        /// Attempts to connect to an Xbox console. If no console name or IP is specified, defaults to a predefined console.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="Ip">The IP Address of the console.</param>
+        public static void Connect(this IXboxConsole console, string Ip) => console.Connect(out console, Ip);
+
+        /// <summary>
         /// Sends a "bye" command to the Xbox console to gracefully disconnect.
         /// </summary>
         /// <param name="console">The instance of the IXboxConsole interface.</param>
@@ -205,36 +208,20 @@ namespace JRPC_Client
                 throw new Exception("Failed to reconnect to console.");
             }
         }
-
-        #endregion Connections
+        #endregion
 
         #region Shortcuts
-
         public static void Shortcut(this IXboxConsole console, XboxShortcuts Shortcut)
         {
             if (!console.IsConnected()) return;
 
             switch (Shortcut)
             {
-                case XboxShortcuts.SelectMusic:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 0u), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.SystemMusicPlayer:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 1u), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.SystemVideoPlayer:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 2u), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.WindowsMediaCenter:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 3u), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.AccountManagement:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 4u), [0, 0, 0, 0]);
-                    break;
+                case XboxShortcuts.SelectMusic: console.CallVoid(console.ResolveFunction(Modules.XAM, 0u), [0, 0, 0, 0]); break;
+                case XboxShortcuts.SystemMusicPlayer: console.CallVoid(console.ResolveFunction(Modules.XAM, 1u), [0, 0, 0, 0]); break;
+                case XboxShortcuts.SystemVideoPlayer: console.CallVoid(console.ResolveFunction(Modules.XAM, 2u), [0, 0, 0, 0]); break;
+                case XboxShortcuts.WindowsMediaCenter: console.CallVoid(console.ResolveFunction(Modules.XAM, 3u), [0, 0, 0, 0]); break;
+                case XboxShortcuts.AccountManagement: console.CallVoid(console.ResolveFunction(Modules.XAM, 4u), [0, 0, 0, 0]); break;
 
                 case XboxShortcuts.DriveSelector:
                     console.Reboot
@@ -246,61 +233,20 @@ namespace JRPC_Client
                     );
                     break;
 
-                case XboxShortcuts.OpenTray:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 96u), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.CloseTray:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 98u), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.TurnOffConsole:
-                    console.ShutDownConsole();
-                    break;
-
-                case XboxShortcuts.Friends:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 703U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.Messages:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 704U), [0]);
-                    break;
-
-                case XboxShortcuts.PrivateChat:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 706U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.Profile:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 708U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.Preferences:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 709U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.FamilySettings:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 710U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.SystemSettings:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 711U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.Recent:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 712U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.Achievements:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 720U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.ActiveDownloads:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 743U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.RedeemCode:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 744U), [0, 0, 0, 0]);
-                    break;
+                case XboxShortcuts.OpenTray: console.CallVoid(console.ResolveFunction(Modules.XAM, 96u), [0, 0, 0, 0]); break;
+                case XboxShortcuts.CloseTray: console.CallVoid(console.ResolveFunction(Modules.XAM, 98u), [0, 0, 0, 0]); break;
+                case XboxShortcuts.TurnOffConsole: console.ShutDownConsole(); break;
+                case XboxShortcuts.Friends: console.CallVoid(console.ResolveFunction(Modules.XAM, 703U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.Messages: console.CallVoid(console.ResolveFunction(Modules.XAM, 704U), [0]); break;
+                case XboxShortcuts.PrivateChat: console.CallVoid(console.ResolveFunction(Modules.XAM, 706U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.Profile: console.CallVoid(console.ResolveFunction(Modules.XAM, 708U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.Preferences: console.CallVoid(console.ResolveFunction(Modules.XAM, 709U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.FamilySettings: console.CallVoid(console.ResolveFunction(Modules.XAM, 710U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.SystemSettings: console.CallVoid(console.ResolveFunction(Modules.XAM, 711U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.Recent: console.CallVoid(console.ResolveFunction(Modules.XAM, 712U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.Achievements: console.CallVoid(console.ResolveFunction(Modules.XAM, 720U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.ActiveDownloads: console.CallVoid(console.ResolveFunction(Modules.XAM, 743U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.RedeemCode: console.CallVoid(console.ResolveFunction(Modules.XAM, 744U), [0, 0, 0, 0]); break;
 
                 case XboxShortcuts.XboxHome:
                     console.Reboot
@@ -312,25 +258,11 @@ namespace JRPC_Client
                     );
                     break;
 
-                case XboxShortcuts.Party:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 773U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.Awards:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 966U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.MyGames:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 967U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.GuideButton:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 1286U), [0, 0, 0, 0]);
-                    break;
-
-                case XboxShortcuts.BeaconsAndActiviy:
-                    console.CallVoid(console.ResolveFunction(Modules.XAM, 2873U), [0, 0, 0, 0]);
-                    break;
+                case XboxShortcuts.Party: console.CallVoid(console.ResolveFunction(Modules.XAM, 773U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.Awards: console.CallVoid(console.ResolveFunction(Modules.XAM, 966U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.MyGames: console.CallVoid(console.ResolveFunction(Modules.XAM, 967U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.GuideButton: console.CallVoid(console.ResolveFunction(Modules.XAM, 1286U), [0, 0, 0, 0]); break;
+                case XboxShortcuts.BeaconsAndActiviy: console.CallVoid(console.ResolveFunction(Modules.XAM, 2873U), [0, 0, 0, 0]); break;
 
                 case XboxShortcuts.AvatarEditor:
                     console.Reboot
@@ -343,11 +275,9 @@ namespace JRPC_Client
                     break;
             }
         }
-
-        #endregion Shortcuts
+        #endregion
 
         #region LED's
-
         /// <summary>
         /// Sets the state of the Xbox console's LEDs.
         /// </summary>
@@ -363,11 +293,9 @@ namespace JRPC_Client
                 + (uint)Bottom_Left + "\\" + Int + "\\" + (uint)Bottom_Right + "\\\"";
             SendCommand(console, command);
         }
-
-        #endregion LED's
+        #endregion
 
         #region Calls And Command Sending
-
         /// <summary>
         /// Sends a command to the Xbox console and processes the response.
         /// </summary>
@@ -677,11 +605,9 @@ namespace JRPC_Client
 
             return true; //return true if it did
         }
-
-        #endregion Calls And Command Sending
+        #endregion
 
         #region Notify
-
         /// <summary>
         /// Sends an Xbox notification with a custom message and type.
         /// </summary>
@@ -706,11 +632,9 @@ namespace JRPC_Client
         /// <param name="Message">The message to display in the notification.</param>
         /// <param name="Type">The type of notification to display (default is FlashingXboxConsole).</param>
         public static void XNotify(this IXboxConsole console, string Message, XNotifyType Type = XNotifyType.FlashingXboxConsole) => XNotify(console, Message, (int)Type);
-
-        #endregion Notify
+        #endregion
 
         #region Console Information
-
         /// <summary>
         /// Retrieves the IP address of the Xbox console and returns it as a string.
         /// </summary>
@@ -856,11 +780,9 @@ namespace JRPC_Client
 
             return debugMonitor; // Return the debug monitor version
         }
-
-        #endregion Console Information
+        #endregion
 
         #region Console Features
-
         /// <summary>
         /// Freeze or unfreeze the console.
         /// </summary>
@@ -921,7 +843,7 @@ namespace JRPC_Client
         /// <summary>
         /// Sets the console's fan speed to a desired amount.
         /// </summary>
-        /// <param name="console"></param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="fan">The fan ID (1 is usually the default.)</param>
         /// <param name="speed">The fan speed.</param>
         /// <returns>Returns true if the fan speed has been modified, otherwise false.</returns>
@@ -969,10 +891,17 @@ namespace JRPC_Client
             return true;
         }
 
+        /// <summary>
+        /// Sets the console's fan speed to a desired amount.
+        /// </summary>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
+        /// <param name="fan">The fan ID (1 is usually the default.)</param>
+        /// <param name="speed">The fan speed.</param>
+        /// <returns>Returns true if the fan speed has been modified, otherwise false.</returns>
+        public static void SetFanSpeed(this IXboxConsole console, int fan, int speed) => console.FanSpeed(fan, speed);
         #endregion Console Features
 
         #region Profiles
-
         /// <summary>
         /// Grabs the console's assigned default profile.
         /// </summary>
@@ -995,18 +924,16 @@ namespace JRPC_Client
         /// Get's the current Sign-In state that the console is currently in.
         /// </summary>
         /// <param name="console">The instance of IXboxConsole interface.</param>
-        public static void GetSignInState(this IXboxConsole console) => console.ResolveFunction("xboxkrnl.exe", 528);
+        public static void GetSignInState(this IXboxConsole console) => console.ResolveFunction(Modules.KERNAL, 528);
 
         /// <summary>
         /// Quickly signs into an account.
         /// </summary>
         /// <param name="console">The instance of IXboxConsole interface.</param>
-        public static void QuickSignIn(this IXboxConsole console) => console.ResolveFunction("xam.xex", 700);
-
-        #endregion Profiles
+        public static void QuickSignIn(this IXboxConsole console) => console.ResolveFunction(Modules.XAM, 700);
+        #endregion
 
         #region Misc
-
         /// <summary>
         /// Sets the color of the console in Xbox 360 Neighborhood.
         /// </summary>
@@ -1096,11 +1023,9 @@ namespace JRPC_Client
 
             return array;
         }
-
-        #endregion Conversion
+        #endregion
 
         #region Controller
-
         /// <summary>
         /// Sends a command to the Xbox console to start processing input for a specified user.
         /// </summary>
@@ -1184,11 +1109,9 @@ namespace JRPC_Client
             CountDurationRemaining = 0;
             console.SendCommand("autoinput user=" + Index + " queryqueue");
         }
-
-        #endregion Controller
+        #endregion
 
         #region Pushing
-
         /// <summary>
         /// Appends a byte value to the end of a byte array and returns the new array.
         /// </summary>
@@ -1204,11 +1127,9 @@ namespace JRPC_Client
             // Append the new byte value at the end of the new array
             OutArray[InArray.Length] = Value;
         }
-
-        #endregion Pushing
+        #endregion
 
         #region Finding And Reading Data
-
         /// <summary>
         /// Finds the first occurrence of a specified substring within the given string.
         /// </summary>
@@ -1611,7 +1532,7 @@ namespace JRPC_Client
         /// <summary>
         /// Reads a string from the Xbox console memory at a specified address, interpreting the memory as UTF-8 encoded.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to read from.</param>
         /// <param name="size">The number of bytes to read, which should correspond to the length of the string.</param>
         /// <returns>The string read from the memory.</returns>
@@ -1619,15 +1540,13 @@ namespace JRPC_Client
         {
             return Encoding.UTF8.GetString(console.GetMemory(Address, size));
         }
-
-        #endregion Finding And Reading Data
+        #endregion
 
         #region Writing & Setting Memory
-
         /// <summary>
         /// Writes a byte array to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Data">The byte array to write to memory.</param>
         public static void SetMemory(this IXboxConsole console, uint Address, byte[] Data)
@@ -1638,7 +1557,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a signed byte value to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The signed byte value to write.</param>
         public static void WriteSByte(this IXboxConsole console, uint Address, sbyte Value)
@@ -1671,7 +1590,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a byte value to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The byte value to write.</param>
         public static void WriteByte(this IXboxConsole console, uint Address, byte Value)
@@ -1682,7 +1601,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes an array of byte values to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The array of byte values to write.</param>
         public static void WriteByte(this IXboxConsole console, uint Address, byte[] Value)
@@ -1693,7 +1612,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a boolean value to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The boolean value to write.</param>
         public static void WriteBool(this IXboxConsole console, uint Address, bool Value)
@@ -1704,7 +1623,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes an array of boolean values to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The array of boolean values to write.</param>
         public static void WriteBool(this IXboxConsole console, uint Address, bool[] Value)
@@ -1721,7 +1640,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a float value to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The float value to write.</param>
         public static void WriteFloat(this IXboxConsole console, uint Address, float Value)
@@ -1758,7 +1677,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a 16-bit signed integer value to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The 16-bit signed integer value to write.</param>
         public static void WriteInt16(this IXboxConsole console, uint Address, short Value)
@@ -1769,71 +1688,109 @@ namespace JRPC_Client
         }
 
         /// <summary>
-        /// Writes an array of 16-bit signed integer values to a specified memory address on the Xbox console.
+        /// Writes an array of 16-bit integers to the specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
-        /// <param name="Value">The array of 16-bit signed integer values to write.</param>
+        /// <param name="Value">An array of 16-bit integers to write.</param>
+        /// <remarks>
+        /// This method converts each 16-bit integer into a byte array, reverses the byte order for proper endianness,
+        /// and writes the processed data to the specified memory address.
+        /// </remarks>
         public static void WriteInt16(this IXboxConsole console, uint Address, short[] Value)
         {
+            // Create a byte array to hold the converted 16-bit integer values
             byte[] array = new byte[Value.Length * 2];
+
+            // Convert each 16-bit integer into bytes and store them in the array
             for (int i = 0; i < Value.Length; i++)
             {
                 BitConverter.GetBytes(Value[i]).CopyTo(array, i * 2);
             }
 
+            // Reverse the byte order to match the correct endianness
             ReverseBytes(array, 2);
+
+            // Write the processed byte array to the specified memory address on the Xbox console
             console.SetMemory(Address, array);
         }
 
         /// <summary>
-        /// Writes a 16-bit unsigned integer value to a specified memory address on the Xbox console.
+        /// Writes a 16-bit unsigned integer to the specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
-        /// <param name="Value">The 16-bit unsigned integer value to write.</param>
+        /// <param name="Value">The 16-bit unsigned integer to write.</param>
+        /// <remarks>
+        /// This method converts the given ushort value into a byte array, 
+        /// adjusts the byte order for proper endianness, and writes it to the specified memory address.
+        /// </remarks>
         public static void WriteUInt16(this IXboxConsole console, uint Address, ushort Value)
         {
+            // Convert the 16-bit unsigned integer into a byte array
             byte[] bytes = BitConverter.GetBytes(Value);
+
+            // Reverse the byte order to match the correct endianness
             ReverseBytes(bytes, 2);
+
+            // Write the processed byte array to the specified memory address on the Xbox console
             console.SetMemory(Address, bytes);
         }
 
         /// <summary>
-        /// Writes an array of 16-bit unsigned integer values to a specified memory address on the Xbox console.
+        /// Writes an array of 16-bit unsigned integers to the specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
-        /// <param name="Value">The array of 16-bit unsigned integer values to write.</param>
+        /// <param name="Value">The array of 16-bit unsigned integers to write.</param>
+        /// <remarks>
+        /// This method converts the given ushort array into a byte array, 
+        /// adjusts the byte order for proper endianness, and writes it to the specified memory address.
+        /// </remarks>
         public static void WriteUInt16(this IXboxConsole console, uint Address, ushort[] Value)
         {
+            // Create a byte array large enough to hold all ushort values (each ushort is 2 bytes)
             byte[] array = new byte[Value.Length * 2];
+
+            // Convert each ushort value to bytes and copy it into the byte array
             for (int i = 0; i < Value.Length; i++)
             {
                 BitConverter.GetBytes(Value[i]).CopyTo(array, i * 2);
             }
 
+            // Reverse the byte order to ensure correct endianness
             ReverseBytes(array, 2);
+
+            // Write the processed byte array to the specified memory address on the Xbox console
             console.SetMemory(Address, array);
         }
 
         /// <summary>
-        /// Writes a 32-bit signed integer value to a specified memory address on the Xbox console.
+        /// Writes a 32-bit signed integer to the specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
-        /// <param name="Value">The 32-bit signed integer value to write.</param>
+        /// <param name="Value">The 32-bit signed integer to write.</param>
+        /// <remarks>
+        /// This method converts the given integer into a byte array, 
+        /// adjusts the byte order for proper endianness, and writes it to the specified memory address.
+        /// </remarks>
         public static void WriteInt32(this IXboxConsole console, uint Address, int Value)
         {
+            // Convert the integer value to a byte array
             byte[] bytes = BitConverter.GetBytes(Value);
+
+            // Reverse the byte order to ensure correct endianness
             ReverseBytes(bytes, 4);
+
+            // Write the processed byte array to the specified memory address on the Xbox console
             console.SetMemory(Address, bytes);
         }
 
         /// <summary>
         /// Writes an array of 32-bit signed integer values to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The array of 32-bit signed integer values to write.</param>
         public static void WriteInt32(this IXboxConsole console, uint Address, int[] Value)
@@ -1851,7 +1808,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a 32-bit unsigned integer value to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The 32-bit unsigned integer value to write.</param>
         public static void WriteUInt32(this IXboxConsole console, uint Address, uint Value)
@@ -1864,7 +1821,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes an array of 32-bit unsigned integer values to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The array of 32-bit unsigned integer values to write.</param>
         public static void WriteUInt32(this IXboxConsole console, uint Address, uint[] Value)
@@ -1882,7 +1839,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a 64-bit signed integer value to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The 64-bit signed integer value to write.</param>
         public static void WriteInt64(this IXboxConsole console, uint Address, long Value)
@@ -1895,7 +1852,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes an array of 64-bit signed integer values to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The array of 64-bit signed integer values to write.</param>
         public static void WriteInt64(this IXboxConsole console, uint Address, long[] Value)
@@ -1913,7 +1870,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a 64-bit unsigned integer value to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The 64-bit unsigned integer value to write.</param>
         public static void WriteUInt64(this IXboxConsole console, uint Address, ulong Value)
@@ -1926,7 +1883,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes an array of 64-bit unsigned integer values to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of the IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="Value">The array of 64-bit unsigned integer values to write.</param>
         public static void WriteUInt64(this IXboxConsole console, uint Address, ulong[] Value)
@@ -1944,7 +1901,7 @@ namespace JRPC_Client
         /// <summary>
         /// Writes a string to a specified memory address on the Xbox console.
         /// </summary>
-        /// <param name="console">The Xbox console instance.</param>
+        /// <param name="console">The instance of IXboxConsole interface.</param>
         /// <param name="Address">The memory address to write to.</param>
         /// <param name="String">The string to write.</param>
         public static void WriteString(this IXboxConsole console, uint Address, string String)
@@ -1961,21 +1918,18 @@ namespace JRPC_Client
             console.SetMemory(Address, OutArray);
         }
 
-        #endregion Writing & Setting Memory
+        #endregion
 
         #region Memory
-
         public static void DumpMemory(this IXboxConsole console, uint Length, string FileName)
         {
             byte[] packet = new byte[1026];
 
             // Send GetMemEx command
         }
-
-        #endregion Memory
+        #endregion
 
         #region Resolve Function
-
         /// <summary>
         /// Resolves a function address from a specified module by its ordinal number on the Xbox console.
         /// </summary>
@@ -1996,11 +1950,9 @@ namespace JRPC_Client
             // Extract and parse the function address from the response text
             return uint.Parse(text.Substring(text.Find(" ") + 1), NumberStyles.HexNumber);
         }
-
-        #endregion Resolve Function
+        #endregion
 
         #region WCHAR
-
         /// <summary>
         /// Converts a string to a WCHAR (Wide Character) array.
         /// </summary>
@@ -2021,6 +1973,13 @@ namespace JRPC_Client
         }
 
         /// <summary>
+        /// Converts a string to a WCHAR (Wide Character) array.
+        /// </summary>
+        /// <param name="String">The string to convert.</param>
+        /// <returns>A byte array representing the WCHAR encoding of the string.</returns>
+        public static byte[] WideChar(string String) => WCHAR(String);
+
+        /// <summary>
         /// Converts the current string to a WCHAR (Wide Character) array.
         /// </summary>
         /// <param name="String">The string to convert.</param>
@@ -2030,10 +1989,15 @@ namespace JRPC_Client
             return WCHAR(String); // Calls the WCHAR method
         }
 
-        #endregion WCHAR
+        /// <summary>
+        /// Converts the current string to a WCHAR (Wide Character) array.
+        /// </summary>
+        /// <param name="String">The string to convert.</param>
+        /// <returns>A byte array representing the WCHAR encoding of the string.</returns>
+        public static byte[] ToWideChar(this string String) => ToWCHAR(String);
+        #endregion
 
         #region Private Methods
-
         /// <summary>
         /// Converts an unsigned integer (uint) to a signed integer (int).
         /// </summary>
@@ -2139,7 +2103,6 @@ namespace JRPC_Client
         }
 
         #region Booleans
-
         /// <summary>
         /// Checks if the provided type is a valid structure type.
         /// </summary>
@@ -2164,11 +2127,9 @@ namespace JRPC_Client
         {
             return ValidReturnTypes.Contains(type); // Check if the type is in the valid return types list
         }
-
-        #endregion Booleans
+        #endregion
 
         #region Reversing
-
         /// <summary>
         /// Reverses the bytes in the buffer in groups of a specified size.
         /// </summary>
@@ -2200,11 +2161,9 @@ namespace JRPC_Client
                 }
             }
         }
-
-        #endregion Reversing
+        #endregion
 
         #region Types
-
         /// <summary>
         /// Maps a generic type to a specific type identifier based on whether it is an array or not.
         /// </summary>
@@ -2269,11 +2228,9 @@ namespace JRPC_Client
             // Default case for unsupported types
             return Uint64;
         }
-
-        #endregion Types
+        #endregion
 
         #region Command Args
-
         /// <summary>
         /// Calls a function on the Xbox console with specified arguments and retrieves the result.
         /// </summary>
@@ -2428,14 +2385,17 @@ namespace JRPC_Client
                         {
                             return num4;
                         }
+
                         if ((object)t == typeof(int))
                         {
                             return UIntToInt(num4);
                         }
+
                         if ((object)t == typeof(short))
                         {
                             return short.Parse(text4.Substring(text4.Find(" ") + 1), NumberStyles.HexNumber);
                         }
+
                         if ((object)t == typeof(ushort))
                         {
                             return ushort.Parse(text4.Substring(text4.Find(" ") + 1), NumberStyles.HexNumber);
@@ -2449,6 +2409,7 @@ namespace JRPC_Client
                         {
                             return text6;
                         }
+
                         if ((object)t == typeof(char[]))
                         {
                             return text6.ToCharArray();
@@ -2460,6 +2421,7 @@ namespace JRPC_Client
                     {
                         return double.Parse(text4.Substring(text4.Find(" ") + 1));
                     }
+
                     if ((object)t == typeof(float))
                     {
                         return float.Parse(text4.Substring(text4.Find(" ") + 1));
@@ -2473,6 +2435,7 @@ namespace JRPC_Client
                         {
                             return b;
                         }
+
                         if ((object)t == typeof(char))
                         {
                             return (char)b;
@@ -2484,6 +2447,7 @@ namespace JRPC_Client
                     {
                         return long.Parse(text4.Substring(text4.Find(" ") + 1), NumberStyles.HexNumber);
                     }
+
                     if ((object)t == typeof(ulong))
                     {
                         return ulong.Parse(text4.Substring(text4.Find(" ") + 1), NumberStyles.HexNumber);
@@ -2514,11 +2478,13 @@ namespace JRPC_Client
                                 num8++;
                                 text15 = "";
                             }
+
                             if (c4 == ';')
                             {
                                 break;
                             }
                         }
+
                         return array8;
                     }
                 case 6u:
@@ -2527,6 +2493,7 @@ namespace JRPC_Client
                         int num7 = 0;
                         string text13 = "";
                         float[] array7 = new float[ArraySize];
+
                         string text9 = text12;
                         for (int i = 0; i < text9.Length; i++)
                         {
@@ -2541,11 +2508,13 @@ namespace JRPC_Client
                                 num7++;
                                 text13 = "";
                             }
+
                             if (c3 == ';')
                             {
                                 break;
                             }
                         }
+
                         return array7;
                     }
                 case 7u:
@@ -2553,8 +2522,10 @@ namespace JRPC_Client
                         string text10 = text4.Substring(text4.Find(" ") + 1);
                         int num6 = 0;
                         string text11 = "";
+
                         byte[] array6 = new byte[ArraySize];
                         string text9 = text10;
+
                         for (int i = 0; i < text9.Length; i++)
                         {
                             char c2 = text9[i];
@@ -2568,11 +2539,13 @@ namespace JRPC_Client
                                 num6++;
                                 text11 = "";
                             }
+
                             if (c2 == ';')
                             {
                                 break;
                             }
                         }
+
                         return array6;
                     }
                 default:
@@ -2581,8 +2554,10 @@ namespace JRPC_Client
                         string text7 = text4.Substring(text4.Find(" ") + 1);
                         int num5 = 0;
                         string text8 = "";
+
                         ulong[] array4 = new ulong[ArraySize];
                         string text9 = text7;
+
                         for (int i = 0; i < text9.Length; i++)
                         {
                             char c = text9[i];
@@ -2596,15 +2571,18 @@ namespace JRPC_Client
                                 num5++;
                                 text8 = "";
                             }
+
                             if (c == ';')
                             {
                                 break;
                             }
                         }
+
                         if ((object)t == typeof(ulong))
                         {
                             return array4;
                         }
+
                         if ((object)t == typeof(long))
                         {
                             long[] array5 = new long[ArraySize];
@@ -2612,19 +2590,20 @@ namespace JRPC_Client
                             {
                                 array5[n] = BitConverter.ToInt64(BitConverter.GetBytes(array4[n]), 0);
                             }
+
                             return array5;
                         }
                     }
+
                     if (Type == Void)
                     {
                         return 0;
                     }
+
                     return ulong.Parse(text4.Substring(text4.Find(" ") + 1), NumberStyles.HexNumber);
             }
-
-            #endregion Command Args
+            #endregion
         }
-
-        #endregion Private Methods
+        #endregion
     }
 }

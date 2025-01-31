@@ -1,4 +1,4 @@
-﻿namespace JRPC
+﻿namespace JRPC_Client
 {
     #pragma warning disable
     public enum XboxDrives

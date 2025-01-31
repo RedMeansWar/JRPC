@@ -1,5 +1,6 @@
 ﻿namespace JRPC.Enums
 {
+    #pragma warning disable
     internal enum DumpFlag
     {
         Normal = 0,
