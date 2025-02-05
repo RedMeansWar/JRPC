@@ -1,4 +1,4 @@
-﻿namespace JRPC.Enums
+﻿namespace JRPC_Client
 {
     #pragma warning disable
     internal enum DumpFlag
